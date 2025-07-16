@@ -1,0 +1,79 @@
+---
+title: "Plotly + Observable no Quarto (Sliders)"
+format:
+  html:
+    toc: true
+ojs: true
+execute:
+  freeze: auto
+---
+
+# Demonstração interativa
+Documento **Quarto** (HTML) que integra **ObservableJS** e **Plotly.js** com _sliders_ reativos.
+
+## Bibliotecas
+
+```{ojs}
+// Controles do Observable
+import { Inputs } from "@observablehq/inputs"
+
+// Carrega Plotly.js via módulo ES (evita erros de sintaxe)
+Plotly = (await import("https://cdn.jsdelivr.net/npm/plotly.js-dist@2.27.0/+esm")).default
+```
+
+## Dados-base
+
+```{ojs}
+x = Array.from({ length: 101 }, (_, i) => i / 10)
+```
+
+## Controles
+
+```{ojs}
+viewof ampSin = Inputs.range([0, 2], { step: 0.1, value: 1, label: "Amplitude do Seno" })
+viewof ampCos = Inputs.range([0, 2], { step: 0.1, value: 1, label: "Amplitude do Cosseno" })
+```
+
+## Função helper: traços atualizados
+
+```{ojs}
+traces = () => [
+  { x, y: x.map(d => ampSin * Math.sin(d)), mode: "lines", name: `Seno × ${ampSin}` },
+  { x, y: x.map(d => ampCos * Math.cos(d)), mode: "lines", name: `Cosseno × ${ampCos}` }
+]
+```
+
+## Gráfico interativo
+
+```{ojs}
+viewof plotBoth = {
+  const div = html`<div style="width:100%;height:400px;"></div>`;
+
+  // Renderiza o gráfico
+  Plotly.newPlot(div, traces(), {
+    margin: { t: 20 },
+    legend: { title: { text: "Clique para ocultar/exibir" } }
+  });
+
+  // Atualiza quando sliders mudam
+  // Reexecuta a célula automaticamente quando ampSin ou ampCos mudarem
+  invalidation.then(() => Plotly.purge(div));
+
+  return div;
+}
+```
+
+> Ajuste os _sliders_ acima e observe o gráfico reagir instantaneamente.
+
+## Conclusão
+
+- **Plotly.js** é carregado via ES module.  
+- _Sliders_ do **Inputs** alteram amplitudes das séries em tempo real.  
+- `x = ...` usa sintaxe padrão de célula Observable (sem `const`).  
+- `invalidation.then()` limpa o gráfico antigo.
+
+Salve como `plotly_slider_final.qmd` e execute:
+
+```bash
+quarto preview plotly_slider_final.qmd
+```
